@@ -1,5 +1,5 @@
 var tbody: HTMLTableSectionElement;
-const max_rows = 10
+const max_rows = 20
 const row_els = []
 export function initTable() {
     const parser = new DOMParser()
@@ -36,7 +36,8 @@ export function initTable() {
 
     table.addEventListener('wheel', e => {
         var slice_start = Number(table.getAttribute('data-slice-start'))
-        slice_start = e.deltaY > 0 ? slice_start + 1 : slice_start - 1
+        var scroll_speed = e.shiftKey ? max_rows - 1 : 1
+        slice_start = e.deltaY > 0 ? slice_start + scroll_speed : slice_start - scroll_speed
         if (slice_start < 0 || slice_start > data.length - max_rows) {
             return
         } 
@@ -44,6 +45,7 @@ export function initTable() {
         table.setAttribute('data-slice-start', slice_start.toString())
 
         renderTables({ start: slice_start, end: slice_start + max_rows })
+        e.preventDefault()
     })
 
     table.querySelectorAll('th').forEach((th, i) => {
@@ -61,6 +63,7 @@ export function initTable() {
 var data : string[][]
 export function setTableData(_data) {
     data = _data
+    renderTables()
 }
 
 export function renderTables(slice: { start: number, end: number } = { start: 0, end: max_rows }) {

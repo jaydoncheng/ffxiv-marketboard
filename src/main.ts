@@ -29,39 +29,57 @@ const item_filters = [
 ]
 
 const cmp = (s) => {
-    var comp = (lh, rh) => { return lh >= rh }
+    var comp = (lh, rh) => {
+        return lh >= rh
+    }
     switch (s) {
         case '>':
-            comp = (lh, rh) => { return lh > rh }; break
+            comp = (lh, rh) => {
+                return lh > rh
+            }
+            break
         case '<':
-            comp = (lh, rh) => { return lh < rh }; break
+            comp = (lh, rh) => {
+                return lh < rh
+            }
+            break
         case '=':
-            comp = (lh, rh) => { return lh == rh }; break
+            comp = (lh, rh) => {
+                return lh == rh
+            }
+            break
         default:
             break
     }
     return comp
 }
 
-
 const market_filters = {
-    "roi": (_roi : string, _hq : boolean) => {
+    roi: (_roi: string, _hq: boolean) => {
         var comp = cmp(_roi.charAt(0))
         const _nroi = Number(_roi.substring(1))
 
         return (item: MarketItem) => {
             var i = _hq ? item.hq : item.nq
-            if (i.minListing.world === undefined || i.minListing.region === undefined) return false
-            const roi = (i.minListing.world.price - i.minListing.region.price) / i.minListing.region.price
+            if (
+                i.minListing.world === undefined ||
+                i.minListing.region === undefined
+            )
+                return false
+            const roi =
+                (i.minListing.world.price - i.minListing.region.price) /
+                i.minListing.region.price
             return comp(roi * 100, _nroi)
         }
     },
-    "name": (_name : string) => {
+    name: (_name: string) => {
         return (item: MarketItem) => {
-            const _item = fitems.find(i => { return i.key === item.itemId}) // dogshit ahh, also doesnt work LOL
+            const _item = fitems.find((i) => {
+                return i.key === item.itemId
+            }) // dogshit ahh, also doesnt work LOL
             return _item.Name.toLowerCase().includes(_name.toLowerCase())
         }
-    }
+    },
 }
 
 function updateItems() {
@@ -115,6 +133,20 @@ function init() {
                 })
                 .then(() => {
                     fitems = updateItems()
+                    setTableData(
+                        fitems.map((r, i) => {
+                            return [
+                                '24m',
+                                '<a href="https://universalis.app/market/' + r.key + '">' + r.Name + '</a>',
+                                'ROI' + i,
+                                'Lowest Price World' + i,
+                                'Home Server Price' + i,
+                                'Average Home Server Price' + i,
+                                'Volume per day' + i,
+                                'Profit' + i,
+                            ]
+                        })
+                    )
                 })
         })
 
@@ -122,7 +154,7 @@ function init() {
         const filters = []
         const name_filter = []
         const value = eId('search_items')!.value
-        value.split(' ').forEach(v => {
+        value.split(' ').forEach((v) => {
             if (v.includes(':')) {
                 var args = v.split(':')
                 if (args[0] in market_filters) {
@@ -132,10 +164,11 @@ function init() {
                 name_filter.push(v)
             }
         })
-        if (name_filter.length > 0) filters.push(market_filters['name'](name_filter.join(' ')));
+        if (name_filter.length > 0)
+            filters.push(market_filters['name'](name_filter.join(' ')))
         console.log(filters)
 
-        var ir = itemresults.filter(item => {
+        var ir = itemresults.filter((item) => {
             return filters.every((filter) => filter(item))
         })
         console.log(ir)
@@ -160,33 +193,27 @@ function init() {
     })
 
     eId('item_table_container')?.appendChild(initTable())
-    setTableData(Array(20).fill(0).map((_, i) => {
-        return [
-            '24m',
-            '<a href="">Item ' + i + '</a>',
-            'ROI' + i,
-            'Lowest Price World' + i,
-            'Home Server Price' + i,
-            'Average Home Server Price' + i,
-            'Volume per day' + i,
-            'Profit' + i
-        ]
-    }))
-    renderTables()
 }
 
-
 document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
-<div>
+    <div style="position: sticky; align-self: flex-start; top: 0; left: 0; font-size: 0.8em; color: gray;">
+        <p style="padding: 0.4em; margin: 0">
+              # of registered items: <span id="n_items">0</span> from XIVAPI<br>
+              # of filtered items: <span id="n_fitems">0</span><br>
+              # of loaded items: <span id="n_mitems">0</span> from Universalis<br>
+        </p>
+    </div>
     <h1>Marketboard</h1>
-    <textarea type="text" id="search_items"></textarea>
-    <a id="view_categories">
-        <button>categories</button>
-    </a>
-    <a id="search">
-        <button>search</button>
-    </a>
-    <select id="world_list"></select>
+    <textarea type="text" id="search_items"></textarea><br>
+    <div>
+        <a id="view_categories">
+            <button>categories</button>
+        </a>
+        <select id="world_list"></select>
+        <a id="search">
+            <button>search</button>
+        </a>
+    </div>
     <dialog id="category_dialog">
         <a id="close_categories" style="left: 0">
             <button>close</button>
@@ -194,14 +221,6 @@ document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
         <div id="category_list"></div>
     </dialog>
     <div id="item_table_container"></div>
-    <div style="position: absolute; left: 0; bottom: 0; font-size: 0.8em; color: gray;">
-        <p style="padding: 0.4em; margin: 0">
-              # of registered items: <span id="n_items">0</span> from XIVAPI<br>
-              # of filtered items: <span id="n_fitems">0</span><br>
-              # of loaded items: <span id="n_mitems">0</span> from Universalis<br>
-        </p>
-    </div>
-</div>
 `
 
 init()
