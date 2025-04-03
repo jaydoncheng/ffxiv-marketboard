@@ -63,19 +63,19 @@ type DailySaleVelocity = {
 
 export type MarketItem = {
     "itemId": number,
-    "nq": {
+    "nq"?: {
         "minListing": MinListing,
         "recentPurchase": RecentPurchase,
         "averageSalePrice": AverageSalePrice,
         "dailySaleVelocity": DailySaleVelocity
     },
-    "hq": {
+    "hq"?: {
         "minListing": MinListing,
         "recentPurchase": RecentPurchase,
         "averageSalePrice": AverageSalePrice,
         "dailySaleVelocity": DailySaleVelocity
     },
-    "worldUploadTimes": {
+    "worldUploadTimes"?: {
         "worldId": number,
         "timestamp": number
     }[]

@@ -8,6 +8,7 @@ import {
 } from './categories'
 import { loadDCs, loadWorlds, renderWorlds } from './worlds'
 import fetchItemData, { MarketItem } from './requests'
+import { initTable, renderTables, setTableData } from './table_display'
 
 const eId = (id: string) => document.getElementById(id)
 const universalis = 'https://universalis.app/api/v2/aggregated/'
@@ -55,6 +56,12 @@ const market_filters = {
             return comp(roi * 100, _nroi)
         }
     },
+    "name": (_name : string) => {
+        return (item: MarketItem) => {
+            const _item = fitems.find(i => { return i.key === item.itemId}) // dogshit ahh, also doesnt work LOL
+            return _item.Name.toLowerCase().includes(_name.toLowerCase())
+        }
+    }
 }
 
 function updateItems() {
@@ -113,6 +120,7 @@ function init() {
 
     eId('search_items')!.addEventListener('input', (e) => {
         const filters = []
+        const name_filter = []
         const value = eId('search_items')!.value
         value.split(' ').forEach(v => {
             if (v.includes(':')) {
@@ -120,8 +128,12 @@ function init() {
                 if (args[0] in market_filters) {
                     filters.push(market_filters[args[0]](args[1], true))
                 }
+            } else {
+                name_filter.push(v)
             }
         })
+        if (name_filter.length > 0) filters.push(market_filters['name'](name_filter.join(' ')));
+        console.log(filters)
 
         var ir = itemresults.filter(item => {
             return filters.every((filter) => filter(item))
@@ -146,28 +158,42 @@ function init() {
         const world = eId('world_list')!.value
         fetchItemData(fitems, Number(world) || 0)
     })
+
+    eId('item_table_container')?.appendChild(initTable())
+    setTableData(Array(20).fill(0).map((_, i) => {
+        return [
+            '24m',
+            '<a href="">Item ' + i + '</a>',
+            'ROI' + i,
+            'Lowest Price World' + i,
+            'Home Server Price' + i,
+            'Average Home Server Price' + i,
+            'Volume per day' + i,
+            'Profit' + i
+        ]
+    }))
+    renderTables()
 }
 
 
 document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
-  <div>
+<div>
     <h1>Marketboard</h1>
-    <input type="text" id="search_items"></input>
+    <textarea type="text" id="search_items"></textarea>
     <a id="view_categories">
         <button>categories</button>
     </a>
-      <a id="search">
-          <button>search</button>
-      </a>
-      <dialog id="category_dialog">
-          <a id="close_categories" style="left: 0">
-              <button>close</button>
-          </a>
+    <a id="search">
+        <button>search</button>
+    </a>
+    <select id="world_list"></select>
+    <dialog id="category_dialog">
+        <a id="close_categories" style="left: 0">
+            <button>close</button>
+        </a>
         <div id="category_list"></div>
-      </dialog>
-      <select id="world_list"></select>
-    <table id="item_table">
-    </table>
+    </dialog>
+    <div id="item_table_container"></div>
     <div style="position: absolute; left: 0; bottom: 0; font-size: 0.8em; color: gray;">
         <p style="padding: 0.4em; margin: 0">
               # of registered items: <span id="n_items">0</span> from XIVAPI<br>
@@ -175,21 +201,7 @@ document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
               # of loaded items: <span id="n_mitems">0</span> from Universalis<br>
         </p>
     </div>
-    <table id="item_table">
-          <thead>
-          <tr>
-                <th>Last updated</th>
-                <th>Name</th>
-                <th>ROI</th>
-                <th>Lowest Price World</th>
-                <th>Home Server Price</th>
-                <th>Average Home Server Price</th>
-                <th>Volume per day</th>
-                <th>Profit</th>
-          </tr>
-          </thead>
-    </table>
-  </div>
+</div>
 `
 
 init()
