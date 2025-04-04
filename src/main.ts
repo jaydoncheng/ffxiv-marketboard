@@ -6,18 +6,19 @@ import {
     initCategories,
     renderCategories,
 } from './categories'
-import { loadDCs, loadWorlds, renderWorlds } from './worlds'
-import fetchItemData, { MarketItem } from './requests'
+import { loadDCs, loadWorlds, renderWorlds, toWorldNames, World } from './worlds'
+import fetchItemData, { calcItems, MarketItem, UniversalisItem } from './requests'
 import { initTable, renderTables, setTableData } from './table_display'
 
 const eId = (id: string) => document.getElementById(id)
-const universalis = 'https://universalis.app/api/v2/aggregated/'
 var marketable_items: any[]
 
 var categories: string[] = []
 var items: any[] = []
 var fitems: any[] = []
-var itemresults: MarketItem[] = []
+var uitems: UniversalisItem[] = []
+var mitems: MarketItem[] = []
+var worlds: {}
 
 const item_filters = [
     (item) => {
@@ -59,7 +60,7 @@ const market_filters = {
         var comp = cmp(_roi.charAt(0))
         const _nroi = Number(_roi.substring(1))
 
-        return (item: MarketItem) => {
+        return (item: UniversalisItem) => {
             var i = _hq ? item.hq : item.nq
             if (
                 i.minListing.world === undefined ||
@@ -73,7 +74,7 @@ const market_filters = {
         }
     },
     name: (_name: string) => {
-        return (item: MarketItem) => {
+        return (item: UniversalisItem) => {
             const _item = fitems.find((i) => {
                 return i.key === item.itemId
             }) // dogshit ahh, also doesnt work LOL
@@ -84,13 +85,7 @@ const market_filters = {
 
 function updateItems() {
     const fitems = items.filter((item) => {
-        var cond = item_filters.every((filter) => filter(item))
-        // if (!cond) {
-        //     console.log(item)
-        //     console.log(item.ItemSearchCategory, filters[0](item))
-        //     console.log(item.key, filters[1](item))
-        // }
-        return cond
+        return item_filters.every((filter) => filter(item))
     })
 
     eId('n_fitems')!.innerText = String(fitems.length)
@@ -102,7 +97,24 @@ document.addEventListener('data_update', (e) => {
 })
 
 document.addEventListener('data_done', (e) => {
-    itemresults = e.detail as MarketItem[]
+    uitems = e.detail as UniversalisItem[]
+    const world = eId('world_list')!.value
+    mitems = calcItems(uitems, world)
+    var table_data = mitems.map(item => {
+        var name = fitems.find(i => i.key === `${item.hq.item_id}`)?.Name || 'Unknown Name'
+        var world = world
+        return [
+            item.hq.last_updated,
+            `<a href="https://universalis.app/market/${item.hq.item_id}">${name}</a>`,
+            `${Math.round(item.hq.roi)}%`,
+            `${item.hq.lowest_price.price} (${worlds[item.hq.lowest_price.worldId]})`,
+            `${item.hq.home_lowest_price}`,
+            `${item.hq.home_avg_sale_price}`,
+            `${item.hq.volume_24h}`,
+            `${item.hq.profit}`,
+        ]
+    })
+    setTableData(table_data)
 })
 
 function init() {
@@ -110,12 +122,13 @@ function init() {
         marketable_items = data
     })
 
-    loadWorlds().then((worlds) => {
+    loadWorlds().then((_worlds) => {
         loadDCs().then((dcs) => {
-            console.log(worlds)
+            console.log(_worlds)
             console.log(dcs)
-            eId('world_list')!.innerHTML = renderWorlds(worlds, dcs)
+            eId('world_list')!.innerHTML = renderWorlds(_worlds, dcs)
         })
+        worlds = toWorldNames(_worlds)
     })
 
     loadItems()
@@ -133,45 +146,31 @@ function init() {
                 })
                 .then(() => {
                     fitems = updateItems()
-                    setTableData(
-                        fitems.map((r, i) => {
-                            return [
-                                '24m',
-                                '<a href="https://universalis.app/market/' + r.key + '">' + r.Name + '</a>',
-                                'ROI' + i,
-                                'Lowest Price World' + i,
-                                'Home Server Price' + i,
-                                'Average Home Server Price' + i,
-                                'Volume per day' + i,
-                                'Profit' + i,
-                            ]
-                        })
-                    )
                 })
         })
 
     eId('search_items')!.addEventListener('input', (e) => {
-        const filters = []
-        const name_filter = []
-        const value = eId('search_items')!.value
-        value.split(' ').forEach((v) => {
-            if (v.includes(':')) {
-                var args = v.split(':')
-                if (args[0] in market_filters) {
-                    filters.push(market_filters[args[0]](args[1], true))
-                }
-            } else {
-                name_filter.push(v)
-            }
-        })
-        if (name_filter.length > 0)
-            filters.push(market_filters['name'](name_filter.join(' ')))
-        console.log(filters)
-
-        var ir = itemresults.filter((item) => {
-            return filters.every((filter) => filter(item))
-        })
-        console.log(ir)
+        // const filters = []
+        // const name_filter = []
+        // const value = eId('search_items')!.value
+        // value.split(' ').forEach((v) => {
+        //     if (v.includes(':')) {
+        //         var args = v.split(':')
+        //         if (args[0] in market_filters) {
+        //             filters.push(market_filters[args[0]](args[1], true))
+        //         }
+        //     } else {
+        //         name_filter.push(v)
+        //     }
+        // })
+        // if (name_filter.length > 0)
+        //     filters.push(market_filters['name'](name_filter.join(' ')))
+        // console.log(filters)
+        //
+        // var ir = uitems.filter((item) => {
+        //     return filters.every((filter) => filter(item))
+        // })
+        // console.log(ir)
     })
 
     eId('view_categories')!.addEventListener('click', (e) => {

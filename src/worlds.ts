@@ -67,6 +67,18 @@ export function loadWorlds() {
     })
 }
 
+export function toWorldNames(worlds: World[]) {
+    var r = {}
+    worlds.forEach((world) => {
+        r[world.key] = world.Name
+    })
+    return r
+}
+
+export function getWorldName(id: string, worlds: World[]) {
+    return worlds.find(w => w.key === id)?.Name || 'Unknown World'
+}
+
 const regionMap = {
     "1": "Japan",
     "2": "North-America",
