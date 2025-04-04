@@ -29,6 +29,27 @@ const item_filters = [
     },
 ]
 
+function timeAgo(input) {
+ const date = (input instanceof Date) ? input : new Date(input);
+ const formatter = new Intl.RelativeTimeFormat('en');
+ const ranges = [
+   ['years', 3600 * 24 * 365],
+   ['months', 3600 * 24 * 30],
+   ['weeks', 3600 * 24 * 7],
+   ['days', 3600 * 24],
+   ['hours', 3600],
+   ['minutes', 60],
+   ['seconds', 1],
+ ] as const;
+ const secondsElapsed = (date.getTime() - Date.now()) / 1000;
+
+ for (const [rangeType, rangeVal] of ranges) {
+   if (rangeVal < Math.abs(secondsElapsed)) {
+     const delta = secondsElapsed / rangeVal;
+     return formatter.format(Math.round(delta), rangeType);
+   }
+ }}
+
 const cmp = (s) => {
     var comp = (lh, rh) => {
         return lh >= rh
@@ -101,10 +122,13 @@ document.addEventListener('data_done', (e) => {
     const world = eId('world_list')!.value
     mitems = calcItems(uitems, world)
     var table_data = mitems.map(item => {
+        if (item.hq.last_updated === undefined) {
+            return
+        }
         var name = fitems.find(i => i.key === `${item.hq.item_id}`)?.Name || 'Unknown Name'
         var world = world
         return [
-            item.hq.last_updated,
+            timeAgo(item.hq.last_updated),
             `<a href="https://universalis.app/market/${item.hq.item_id}">${name}</a>`,
             `${Math.round(item.hq.roi)}%`,
             `${item.hq.lowest_price.price} (${worlds[item.hq.lowest_price.worldId]})`,
@@ -180,7 +204,7 @@ function init() {
     eId('close_categories')!.addEventListener('click', (e) => {
         eId('category_dialog')!.close()
         var _categories = updateCategories()
-        if (categories.length != _categories.length) {
+        if (categories != _categories) {
             categories = _categories
             fitems = updateItems()
         }

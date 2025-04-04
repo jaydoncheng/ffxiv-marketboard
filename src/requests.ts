@@ -128,7 +128,7 @@ export default function fetchItemData(items: any[], _world: number) {
 
 export type MarketQualityItem = {
     item_id: number
-    last_updated: number
+    last_updated: string
     roi: number
     profit: number
     home_lowest_price: number
@@ -147,7 +147,7 @@ export function calcItem(item: UniversalisItem, world : number) {
     const r = {
         hq: {
             item_id: item.itemId,
-            last_updated: Date.now(),
+            last_updated: "",
             roi: Infinity,
             profit: Infinity,
             home_lowest_price: Infinity,
@@ -157,7 +157,7 @@ export function calcItem(item: UniversalisItem, world : number) {
         },
         nq: {
             item_id: item.itemId,
-            last_updated: Date.now(),
+            last_updated: "",
             roi: Infinity,
             profit: Infinity,
             home_lowest_price: Infinity,
@@ -165,10 +165,6 @@ export function calcItem(item: UniversalisItem, world : number) {
             lowest_price: { price: 0, worldId: 0 },
             volume_24h: NaN,
         },
-    }
-
-    const tm = (seconds) => {
-        return new Date(seconds * 1000).toISOString().substring(11, 19)
     }
 
     const f = (q: Quality, t: "hq" | "nq") => {
@@ -182,9 +178,11 @@ export function calcItem(item: UniversalisItem, world : number) {
             }
             if (item.worldUploadTimes) {
                 var v = item.worldUploadTimes.find((w) => {
-                    return w.worldId === world
+                    return w.worldId === Number(world)
                 }) || { timestamp: NaN }
-                r[t] = tm(Date.now() - v.timestamp)
+                if (v.timestamp) {
+                    r[t].last_updated = v.timestamp
+                }
             }
         }
         if (q.averageSalePrice.world) {
@@ -209,3 +207,4 @@ export function calcItems(items: UniversalisItem[], world) : MarketItem[] {
         return calcItem(item, world)
     })
 }
+
